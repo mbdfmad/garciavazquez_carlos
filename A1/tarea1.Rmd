@@ -1,0 +1,484 @@
+---
+title: "Master en Big Data. Fundamentos Matemáticos del Análisis de Datos (FMAD)."
+author: "García Vázquez, Carlos"
+date: 'Curso 2021-22. Última actualización: `r format(Sys.time(), "%Y-%m-%d")`'
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+subtitle: Tarea 1
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Preliminares
+
+Cargamos en memoria los paquetes que van a ser necesarios durante la ejecución de la práctica. 
+
+```{r message=FALSE}
+library(tidyverse) # Ya tiene incorporadas dplyr y ggplot
+library(gridExtra)
+#Este tercero, lo necesitaremos para acceder a los datos necesarios en el segundo apartado 
+#del último ejercicio
+library(nycflights13)
+```
+
+
+# Instrucciones preliminares
+
++ Empieza abriendo el proyecto de RStudio correspondiente a tu repositorio personal de la asignatura. 
+
++ En todas las tareas tendrás que repetir un proceso como el descrito en la sección *Repite los pasos Creando un fichero Rmarkdown para esta práctica* de la *Práctica00*. Puedes releer la sección *Practicando la entrega de las Tareas* de esa misma práctica para recordar el procedimiento de entrega.
+
+
+# Ejercicio 1. Análisis exploratorio de un conjunto de datos y operaciones con dplyr. 
+
++ Vamos a utilizar el conjunto de datos contenido en el fichero (es un enlace):  
+[cholesterol.csv](https://gist.githubusercontent.com/fsansegundo/ee991e53e1a571dd34034c42b5516eae/raw/2206455b5772e90c5a2a24a3f42a84408fd1d1c5/cholesterol.csv)  
+Los datos proceden de un estudio realizado en la *University of Virginia School of Medicine* que investiga la prevalencia de la obesidad, la diabetes y otros factores de riesgo cardiovascular. Se puede encontrar más información sobre el fichero en este enlace:  
+[https://biostat.app.vumc.org/wiki/pub/Main/DataSets/diabetes.html](https://biostat.app.vumc.org/wiki/pub/Main/DataSets/diabetes.html)  
+
++ Carga el conjunto de datos en un data.frame de R llamado `chlstrl`.
+
+```{r}
+#Cargamos los datos requeridos
+chlstrl=read_csv("./data/cholesterol.csv")
+```
+
++ Empezaremos por información básica sobre el conjunto de datos. Cuántas observaciones contiene, cuáles son las variables y de qué tipos,...
+
+```{r}
+#Obtenemos una primera visualización de la estructura de datos que contiene la tabla
+head(chlstrl)
+```
+
+Analizamos el número de variables totales a manejar, los tipos, número de registros...
+
+```{r}
+#Número de registros con el que trabajaremos
+nrow(chlstrl)
+```
+
+```{r}
+#Número de variables con las que trabajaremos
+ncol(chlstrl)
+```
+
+```{r}
+#Resumen con información básica adicional, como podría ser la tipología de datos que vamos a manejar
+str(chlstrl)
+```
+
++ Asegúrate de comprobar si hay datos ausentes y localízalos en la tabla.
+
+En este tipo de ejercicios, resulta fundamental tener en cuenta los datos ausentes con los que contamos.
+
+
+```{r}
+#Sacamos el número de datos ausentes en toda la tabla, detectando de esta forma su presencia
+table(is.na(chlstrl)) #Tener en cuenta los TRUE
+```
+
+```{r}
+#Los localizamos en el DataFrame, analizando las posiciones que ocupan
+head(is.na(chlstrl)) #Imprimimos solo el head
+```
+
+
+```{r}
+#Hacemos la cuenta de entre los 403 registros, de cuales son los que contienen algún valor nulo
+table(complete.cases(chlstrl)) #Tener en cuenta los FALSE
+```
+
+```{r}
+#Con la siguiente instrucción, localizamos las filas con algún dato ausente
+head(complete.cases(chlstrl)) # Imprimimos solo el head
+```
+
+```{r}
+#Finalmente, con el summary, obtenemos el número de nulos en cada una de las variables contempladas 
+#en la tabla
+summary(chlstrl)
+```
+
+Una vez disponemos de la información suficiente sobre la presencia de datos ausentes en la tabla, tenemos que decidir cómo gestionar su presencia. 
+
+En este caso, se ha decidido, que en las funciones en las que se considere necesario para su correcta utilización, se incorpore el parámetro opcional na.rm=TRUE para ignorar los nulos y que no pasen inadvertidos. 
+
+
++ El análisis exploratorio (numérico y gráfico) debe cubrir todos los tipos de variable de la tabla. Es decir, que al menos debes estudiar una variable por cada tipo de variable presente en la tabla. El análisis debe contener, al menos:
+  - Para las variables cuantitativas (continuas o discretas).  
+    Resumen numérico básico.  
+    Gráficas (las adecuadas, a ser posible más de un tipo de gráfico). 
+    
+    
+De entre las variables cuantitativas y continuas, seleccionamos la variable 'chol' para trabajarla y estudiarla
+    
+RESUMEN NUMÉRICO DE LA VARIABLE
+    
+```{r}
+#Sacamos el mínimo, máximo,media,mediana, cuartiles y datos ausentes de la variable seleccionada
+summary(chlstrl$chol)
+```
+Como ya sabemos, la media se suele ver muy influenciada por la presencia de valores atípicos, al contrario que la mediana, que por su construcción, no se ve tan afectada por estos. De esta forma, la comparación entre ambas nos puede dar información determinante acerca de la presencia de este tipo de valores en la muestra, que si no se tratan correctamente, pueden llevar a interpretaciones erróneas de los datos. 
+
+
+```{r}
+#Calculamos el recorrido intercuartílico
+IQR(chlstrl$chol, na.rm = TRUE)
+```
+
+```{r}
+#Los valores atípicos
+unname(quantile(chlstrl$chol, probs = c(1/4, 3/4),na.rm=TRUE) 
+       + c(-1, 1) * 1.5 * IQR(chlstrl$chol, na.rm = TRUE))
+```
+Con estas 2 últimas funciones, tenemos un mayor conocimiento de la dispersión de la variable a estudiar. Y concretamente, con la función unname(), conocemos el rango (102.5-306.5) a partir del cual podremos distinguir los valores atípicos de la muestra. 
+
+```{r}
+#Desviación típica
+sd(chlstrl$chol, na.rm = TRUE)
+```
+
+```{r}
+#Varianza
+var(chlstrl$chol, na.rm = TRUE)
+```
+Por último, hemos calculado tanto la varianza como la desviación típica de la variable, para tener aún más información acerca de la dispersión y variabilidad que tienen lo datos respecto a su media. 
+
+De esta forma, podemos completar el estudio y tener un resumen global a nivel numérico del comportamiento de la variable 'chol' 
+
+
+GRÁFICAS
+    
+1) Histograma 
+
+```{r}
+#FORMA 1
+
+#Hacemos los cortes para realizar 10 intervalos, omitiendo los valores nulos de la variable
+cortes = seq(min(chlstrl$chol,na.rm=TRUE), max(chlstrl$chol,na.rm=TRUE), length.out = 11)
+#Graficamos
+ggplot(chlstrl, aes(x = chol)) + 
+  geom_histogram(aes(y=stat(density)), 
+                 breaks=cortes, fill = "orange", color="black")  + 
+  geom_density(color="red", size=1.5)
+```
+
+
+```{r}
+#FORMA 2
+
+#En este caso, especificamos el número de intervalos con bins
+#Lo dividiremos en 25 intervalos, en este caso sin especificar de forma explicita los intervalos
+ggplot(chlstrl, aes(x = chol)) + 
+  geom_histogram(aes(y=stat(density)), 
+                 bins=25, fill = "orange", color="black")  + 
+  geom_density(color="red", size=1.5)
+```
+
+```{r}
+#FORMA 3
+
+#En este último caso, simplemente dejamos que R defina los intervalos
+ggplot(chlstrl, aes(x = chol)) + 
+  geom_histogram(aes(y=stat(density)) 
+                 , fill = "orange", color="black")  + 
+  geom_density(color="red", size=1.5)
+```
+Mediante el histograma se puede apreciar la distribución de la variable a estudiar, que es asimétrica a la derecha y se asemeja a la normal. 
+
+
+2) Boxplot
+
+```{r}
+#Boxplot normal
+#Podemos ver como los valores atípicos se grafican individualmente
+ggplot(chlstrl) + 
+  geom_boxplot(mapping = aes(y = chol), fill="orange")
+```
+
+
+```{r}
+#Violinplot
+ggplot(chlstrl) + 
+  geom_violin(mapping = aes(x=0, y = chol)) +
+  scale_x_discrete(breaks = c()) +
+  geom_boxplot(mapping = aes(y = chol), fill="green") +
+  geom_jitter(aes(x=0, y = chol), 
+              position = position_jitter(w=0.05, h= 0), col="blue")
+```
+
+El Boxplot y Violinplot representados, también nos permiten hacernos una idea de la distribución de la variable, además de identificar los valores atípicos. 
+
+
+
+  - Variables categóricas (factores).  
+    Tablas de frecuencia (absolutas y relativas).  
+    Gráficas (diagrama de barras).  
+    
+Como variable categórica haremos uso de 'gender', que es la única de este tipo que podemos encontrar en el DataFrame
+    
+INFORMACIÓN DE LA VARIABLE
+    
+```{r}
+summary(chlstrl$gender)
+```
+
+TABLAS DE FRECUENCIA
+
+```{r}
+#table(chlstrl$gender) con R básico
+chlstrl %>%
+  count(gender) #Con dplyr
+```
+
+
+```{r}
+#prop.table(table(chlstrl$gender)) con R básico
+chlstrl %>% 
+  count(gender) %>%
+    mutate(gender, relFreq = prop.table(n), n=NULL) #Con dplyr
+```
+
+
+GRÁFICO DE BARRAS
+
+```{r}
+ggplot(chlstrl) + 
+  geom_bar(aes(x=gender,fill=gender))
+```
+
+
++ Los valores de `height` y `weight` están en pulgadas (inches) y libras (pounds) respectivamente. Una libra son $\approx$ 0.454kg y una pulgada son $\approx$ 0.0254m.  Usa dplyr para convertir esas columnas a metros y kilogramos respectivamente.  Las nuevas columnas deben llamarse igual que las originales.
+
+
+```{r}
+#Cambiamos las unidades de los valores asociados a las variables 'height' y 'weight' 
+#sobreescribiendo chlstrl
+(chlstrl=chlstrl %>% 
+    mutate(height=height*0.0254,weight=weight*0.454))
+```
+
++ Ahora usa esos valores de `height` y `weight` para añadir una nueva columna llamada BMI, definida mediante:
+$$BMI = \dfrac{weight}{height^2}$$
+(se divide por el cuadrado de la altura). 
+
+```{r}
+#Añadimos la nueva columna especificada
+(chlstrl=chlstrl %>% 
+    mutate(BMI=weight/(height)^2))
+```
+
++ Crea una nueva columna llamada `ageGroup` dividiendo la edad en los siguientes tres niveles:
+
+
+```{r}
+#Añadimos la nueva columna especificada
+(chlstrl=chlstrl %>% 
+    mutate(ageGroup=cut(age,breaks=c(10,40,70,100))))
+```
+
+
+
++ Usando `dplyr` calcula cuántas observaciones hay en cada nivel de `ageGroup` (indicación: usa `group_by`). Ahora, usando aquellas observaciones que corresponden a mujeres, ¿cuál es la media del nivel de colesterol y de BMI en cada uno de esos grupos de edad?
+
+
+```{r}
+#Numero de observaciones para cada nivel de ageGroup
+chlstrl %>% 
+  count(ageGroup)
+```
+
+
+```{r}
+#De entre las mujeres, media del nivel de colesterol y de BMI en cada uno de esos grupos de edad
+chlstrl %>% 
+  filter(gender=='female') %>%
+  group_by(ageGroup) %>%
+  summarise(mediaCol=mean(chol,na.rm=TRUE),mediaBMI=mean(BMI,na.rm=TRUE))
+  
+```
+
+# Ejercicio 2: Funciones de R.
+
++ Crea una función de R llamada `cambiosSigno` que dado un vector `x` de números enteros no nulos, como 
+
+    ```{r echo=FALSE, comment=NULL}
+    set.seed(2019)
+    x = sample(c(-1, 1), 9, replace = TRUE) * sample(1:20, 9, replace = TRUE)
+    cat(paste0(x, sep=", "))
+    ```
+    
+  calcule cuántos cambios de signo ha habido. Es decir, cuántas veces el signo de un elemento es distinto del signo del elemento previo. Por ejemplo, en el vector anterior hay 4 cambios de signo (en las posiciones 3, 4, 7 y 8). 
+  
+  
+```{r}
+cambioSigno=function(x=sample(c(-1, 1), 9, replace = TRUE) * sample(1:20, 9, replace = TRUE)) {
+  
+  sol=list()
+  cont=0
+  for (i in 1:(length(x)-1)) {
+    if ((x[i]>0 && x[i+1]<0) | (x[i]<0 && x[i+1]>0)){
+      cont=cont+1
+    }
+  }
+  sol$vector=x
+  sol$cambSigno=cont
+  returnValue(sol)
+}
+cambioSigno(x)
+#Si no introduces nada
+cambioSigno()
+```
+  
++ Modifica la función para que devuelva como resultado las posiciones donde hay cambios de signo. Llama `cambiosSignoPos(x)` a esa otra función. Por ejemplo, para el vector anterior el resultado de esta función sería
+
+  
+```{r}
+cambiosSignoPos=function(x=sample(c(-1, 1), 9, replace = TRUE) * sample(1:20, 9, replace = TRUE)) {
+  sol=list()
+  vectorPos=c()
+  for (i in 1:(length(x)-1)) {
+    if ((x[i]>0 && x[i+1]<0) | (x[i]<0 && x[i+1]>0)){
+      vectorPos=c(vectorPos,i+1)
+    }
+  }
+  sol$vector=x
+  sol$posiciones=vectorPos
+  returnValue(sol)
+}
+cambiosSignoPos(x)
+#Si no introduces nada
+cambioSigno()
+
+```
+
+Podemos ver como ambas funcionan , independientemente de si se les introduce un vector como argumento o no. Concretamente, en el caso de no introducir ningun vector, se crea uno por defecto.
+
+
+
+# Ejercicio 3. R4DS.
+
+Es recomendable que esta semana del curso  hagas al menos una lectura somera de los Capítulos 1 a 5 de [R for Data Science (R4DS), de H. Wickham](https://r4ds.had.co.nz/index.html), con énfasis especial en los Capítulos 3 y 5 (los capítulos 1, 2 y 4 son muy breves). Los siguientes apartados pretenden motivar esa lectura y por eso mismo pueden resultar un poco más laboriosos.  
+
++ Haz el [ejercicio 6 de la Sección 3.6.1 de R4DS](https://r4ds.had.co.nz/data-visualisation.html#exercises-3).
+
+```{r}
+#Vemos la estructura de la tabla con los datos que se van a trabajar
+head(mpg)
+```
+
+Gráfico 1
+
+```{r}
+g1=ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth(se=FALSE)
+
+```
+
+Gráfico 2
+
+```{r}
+g2=ggplot(data = mpg,aes(x = displ, y = hwy)) +
+  geom_point() + 
+  geom_smooth(aes(group = drv),se=FALSE)
+```
+
+Gráfico 3
+
+```{r}
+g3=ggplot(data = mpg,aes(x = displ, y = hwy,color=drv)) +
+  geom_point() + 
+  geom_smooth(se=FALSE)
+```
+
+Gráfico 4
+
+```{r}
+g4=ggplot(data = mpg,aes(x = displ, y = hwy)) +
+  geom_point(aes(color=drv)) + 
+  geom_smooth(se=FALSE)
+```
+
+Gráfico 5
+
+```{r}
+g5=ggplot(data = mpg,aes(x = displ, y = hwy)) +
+  geom_point(aes(color=drv)) + 
+  geom_smooth(aes(linetype=drv),se=FALSE)
+```
+
+Gráfico 6
+
+```{r}
+g6=ggplot(data = mpg) + 
+  geom_point(aes(x = displ, y = hwy, fill=drv), shape = 21,color="white",size= 2.5, stroke = 1.5)
+```
+
+Mezclamos los 6 gráficos en una única representación
+
+```{r}
+grid.arrange(g1, g2, g3, g4, g5, g6, nrow = 3)
+```
+
+
++ Haz el [ejercicio 1 de la Sección 5.2.4 de R4DS](https://r4ds.had.co.nz/transform.html#exercises-8). 
+
+```{r}
+#Vemos la estructura de la tabla con los datos que se van a trabajar
+head(flights)
+```
+
+
+Find all flights that: 
+
+
+Had an arrival delay of two or more hours
+```{r}
+flights %>%
+  filter(arr_delay>=2*60)
+```
+
+Flew to Houston (IAH or HOU)
+```{r}
+flights %>%
+  filter(dest %in% c('HOU','IAH'))
+```
+
+Were operated by United, American, or Delta
+```{r}
+flights %>%
+  filter(carrier %in% c('UA','AA','DL'))
+```
+
+Departed in summer (July, August, and September)
+```{r}
+flights %>%
+  filter(month %in% c(7:9))
+```
+
+Arrived more than two hours late, but didn’t leave late
+```{r}
+flights %>%
+  filter(dep_delay<=0,arr_delay>2*60)
+```
+
+Were delayed by at least an hour, but made up over 30 minutes in flight
+```{r}
+flights %>%
+  filter(dep_delay>=60,(arr_delay-dep_delay)<(-30))
+```
+
+Departed between midnight and 6am (inclusive)
+```{r}
+flights %>%
+  filter(dep_time ==2400 | dep_time<=600)
+```
+
+
+
+
