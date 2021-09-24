@@ -1,0 +1,486 @@
+---
+title: "Master en Big Data. Fundamentos Matemáticos del Análisis de Datos (FMAD)."
+author: "Carlos García Vázquez"
+date: 'Curso 2021-22. Última actualización: `r format(Sys.time(), "%Y-%m-%d")`'
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+subtitle: Tarea 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Instrucciones preliminares
+
++ Empieza abriendo el proyecto de RStudio correspondiente a tu repositorio personal de la asignatura. 
+
++ En todas las tareas tendrás que repetir un proceso como el descrito en la sección *Repite los pasos Creando un fichero Rmarkdown para esta práctica* de la *Práctica00*. Puedes releer la sección *Practicando la entrega de las Tareas* de esa misma práctica para recordar el procedimiento de entrega.
+
+
+# Preliminares
+
+Carga de librerías inicial: 
+
+```{r message=FALSE}
+library(tidyverse)
+```
+
+
+# Ejercicio 1. Simulando variables aleatorias discretas.
+
+**Apartado 1:** La variable aleatoria discreta $X1$ tiene esta tabla de densidad de probabilidad (es la variable que se usa como ejemplo en la Sesión ):
+$$
+\begin{array}{|c|c|c|c|c|c|c|}
+\hline
+\text{valor de }X1 & 0 & 1 & 2 & 3 \\
+\hline
+\text{Probabilidad de ese valor }P(X = x_i) & \dfrac{64}{125} &
+\dfrac{48}{125}& \dfrac{12}{125} & \dfrac{1}{125}\rule{0mm}{6mm} \\[3mm]
+\hline
+\end{array}
+$$
+
+Creamos los vectores para trabajar con ellos.
+
+```{r}
+X1=c(0:3)
+pX1=c(64/125,48/125,12/125,1/125)
+(tableX1=data.frame(X1,pX1))
+```
+
+Calcula la media y la varianza teóricas de esta variable.
+
+```{r}
+#Media teórica
+(mu_t=sum(X1*pX1))
+#Varianza teórica
+(var_t=sum(((X1-mu_t)^2)*pX1))
+```
+
+**Apartado 2:**  Combina `sample` con `replicate` para simular cien mil muestras de tamaño 10 de esta variable $X1$. Estudia la distribución de las medias muestrales como hemos hecho en ejemplos previos, ilustrando con gráficas la distribución de esas medias muestrales. Cambia después el tamaño de la muestra a 30 y repite el análisis. 
+
+
+Estudiaremos la distribución de las medias muestrales en 2 casos, entre los cuales, la principal diferencia será el tamaño de la muestra (n) empleado. 
+
+Número de muestras para ambos casos (k=100000)
+
+```{r}
+set.seed(2021)
+k=100000
+```
+
+
+ANÁLISIS 1 (n=10)
+
+1) Creamos el vector con las medias muestrales de las 100000 muestras generadas
+
+```{r}
+n1=10
+mediasMuestrales1 = replicate(k, { 
+  muestra = sample(X1, n1, replace = TRUE,prob=pX1)
+  mean(muestra)
+})
+```
+
+2) Estudio de la distribución de las medias muestrales
+
+A continuación, podemos apreciar la representación gráfica de la distribución de las medias muestrales
+
+```{r}
+hist(mediasMuestrales1, breaks = 20, main="Distribución de medias muestrales (n=10)", 
+     col="peachpuff", probability = TRUE, xlim=range(X1))
+lines(density(mediasMuestrales1,adjust=3), lwd=4, col="red")
+abline(v = mean(mediasMuestrales1), lty=2, lwd=5, col="green")
+abline(v = mu_t, lty=3, lwd=5, col="blue")
+```
+
+En cuanto a la distribución, en primer lugar se puede apreciar que es asimétrica a la derecha. Aparte, las líneas discontinuas en color verde y azul ubicadas en el gráfico, representan las media obtenida a partir de las muestras tomadas y la media teórica, respectivamente. En este aspecto, destacar el hecho de que estos 2 valores coinciden, por lo que se podría decir que a partir de las 100000 muestras de tamaño 1o tomadas, se ha conseguido una buena estimación de la media teórica de la población. 
+
+Ahora, lo que vamos a hacer es aumentar el tamaño de las muestras tomadas. 
+
+ANÁLISIS 2 (n=30)
+
+1) Creamos el vector con las medias muestrales de las 100000 muestras generadas
+
+```{r}
+n2=30
+mediasMuestrales2 = replicate(k, { 
+  muestra = sample(X1, n2, replace = TRUE,prob=pX1)
+  mean(muestra)
+})
+```
+
+2) Estudio de la distribución de las medias muestrales
+
+Representación gráfica de la distribución de las medias muestrales
+
+```{r}
+hist(mediasMuestrales2, breaks = 20, main="Distribución de medias muestrales (n=30)", 
+     col="peachpuff", probability = TRUE, xlim=range(X1))
+lines(density(mediasMuestrales1,adjust=3), lwd=4, col="red")
+abline(v = mean(mediasMuestrales2), lty=2, lwd=5, col="green")
+abline(v = mu_t, lty=3, lwd=5, col="blue")
+```
+Aquí, al igual que en el caso anterior, se aprecia la asimetría a la derecha, y la media obtenida a partir de las muestras y la teórica, que tambien coinciden en el gráfico. 
+
+CONCLUSIÓN
+
+En ambos casos, hemos visto que la media de las medias muestrales coincide con la media de la población. 
+
+Aparte, se confirma lo que dice el conocido como Teorema Central del Límite, que afirma, que dado un tamaño de muestra aleatoria de la población lo suficientemente grande, la distribución de las medias muestrales seguirá una distribución normal, tal y como hemos podido comprobar en ambos casos. 
+
+Otra de las cosas a destacar en la comparación entre ambos gráficos, es la reducción de la anchura de la campana entorno a la media, al aumentar el tamaño de las muestras de 10 a 30. Por lo que la variabilidad en cuanto a las medias de las muestras disminuye, cumpliendo tambien con las afirmaciones del Teorema Central del Límite. En términos generales, a mayor tamaño de muestra, la precisión con la que obtenemos la media será mayor. 
+
+**Apartado 3:** La variable aleatoria discreta $X2$ tiene esta tabla de densidad de probabilidad:
+$$
+\begin{array}{|c|c|c|c|c|c|}
+\hline
+\text{valor de }X2 & 0 & 1 & 2 \\
+\hline
+\text{Probabilidad de ese valor }P(X = x_i) & \dfrac{1}{2} &
+\dfrac{1}{4}&  \dfrac{1}{4}\rule{0mm}{6mm} \\[3mm]
+\hline
+\end{array}
+$$
+Suponemos que $X1$ y $X2$ son independientes. ¿Qué valores puede tomar la suma $X1 + X2$? ¿Cuál es su tabla de probabilidad?
+
+Nuestra variable a estudiar es $X1 + X2$
+
+Tabla de probabilidades de $X2$
+
+```{r}
+X2=c(0:2)
+pX2=c(1/2,1/4,1/4)
+(tableX2=data.frame(X2,pX2))
+```
+
+```{r}
+#Media teórica
+(mu_t1=sum(X2*pX2))
+#Varianza teórica
+(var_t1=sum(((X2-mu_t1)^2)*pX2))
+```
+A continuación, vamos a crear una tabla con las distintas posibilidades que se pueden dar entre ambos conjuntos de datos, cuanto sería la suma entre ambos y la probabilidad de que sucedan, teniendo en cuenta las tablas de probabilidad de ambas variables. 
+
+Al ser variables independientes X1 y X2, la intersección de los sucesos se calcula como la multiplicación de las probabilidades de cada uno. 
+
+```{r}
+pos=merge(tableX1$X1,tableX2$X2) %>%
+  mutate(posSum=x+y,prob=rep(tableX1$pX1,times=3)*rep(tableX2$pX2,each=4))
+rename(pos,X1=x,X2=y)
+
+```
+
+Convertimos la columna 'posSum' en factor para hacer la clasificación y agrupar por cada resultado posible
+
+```{r}
+pos$posSum=as.factor(pos$posSum)
+```
+
+Realizamos el cálculo final de la tabla de probabilidades de la nueva variable X1 + X2
+
+```{r}
+pos %>%
+  group_by(posSum) %>%
+  summarise(prob=sum(prob))
+```
+
+
+
+**Apartado 4:** Calcula la media teórica de la suma $X_1 + X_2$. Después usa `sample` y `replicate` para simular cien mil *valores* de esta variable suma. Calcula la media de esos valores. *Advertencia:* no es el mismo tipo de análisis que hemos hecho en el segundo apartado. 
+
+Cálculo de la media teórica de la variable X1+X2
+
+1) Cálculo a partir de los resultados obtenidos en el apartado anterior
+
+
+Tener en cuenta que con el as.numeric y la función paste, conseguimos transformar los valores reales de la columna posSum del DataFrame pos de tipo factor a numérico. 
+
+```{r}
+#Media teórica
+(mu_t2=sum(as.numeric(paste(pos$posSum))*pos$prob))
+```
+2) Cálculo a partir de las medias de cada variable
+
+La media de la suma es la suma de las medias 
+
+$E(X_1 + X_2) = E(X_1) + E(X_2)$
+```{r}
+(mu_suma=mu_t+mu_t1)
+```
+
+Hemos calculado la media teórica de las 2 formas, y como era evidente el resultado es el mismo. 
+
+
+
+En este caso, cogemos k=100000 muestras de tamaño 1 cada una de ambas variables para estudiar la suma de las mismas
+
+```{r}
+set.seed(2021)
+k=100000
+n3=1
+```
+Calculamos las medias muestrales de la variable X1+X2, sabiendo que su media será igual a la suma de la media de X1 más la media de X2: 
+
+```{r}
+mediasMuestrales3 = replicate(k, { 
+  muestraX1 = sample(X1, n3, replace = TRUE,prob=pX1)
+  muestraX2 = sample(X2, n3, replace = TRUE,prob=pX2)
+  muestraX1 + muestraX2
+})
+```
+
+La media de estos valores es: 
+
+```{r}
+(mediaFinal=mean(mediasMuestrales3))
+```
+
+Podemos ver que sale igual, a excepción de algunos decimales, que la media teórica calculada previamente en el apartado anterior. 
+
+En este caso hemos reducido el tamaño de la muestra lo máximo hasta tomar una única, haciendo que la variabilidad de las medias obtenidas en las muestras sea mayor, y reduciendo de esta forma la precisión en cuanto a la estimación de la media con respecto a la teórica. 
+
+# Ejercicio 2. Datos limpios
+
++ Descarga el fichero de este enlace  
+
+[https://gist.githubusercontent.com/fernandosansegundo/471b4887737cfcec7e9cf28631f2e21e/raw/b3944599d02df494f5903740db5acac9da35bc6f/testResults.csv](https://gist.githubusercontent.com/fernandosansegundo/471b4887737cfcec7e9cf28631f2e21e/raw/b3944599d02df494f5903740db5acac9da35bc6f/testResults.csv) 
+
+Una vez descargado el fichero, lo cargamos, vemos su estructura y como está organizado
+
+```{r}
+testResults=read_csv("./data/testResults.csv")
+head(testResults)
+```
+
+```{r}
+names(testResults)
+```
+
+
++ Este fichero contiene las notas de los alumnos de una clase, que hicieron dos tests cada semana durante cinco semanas. La tabla de datos no cumple los principios de *tidy data* que hemos visto en clase. Tu tarea en este ejercicio es explicar por qué no se cumplen y obtener una tabla de datos limpios con la misma información usando *tidyR*.  
+**Indicación:** lee la ayuda de la función `separate` de *tidyR*.
+
+
+1) Explicación de por qué no cumple con los principios de tidy data
+
+Este conjunto de datos que se está estudiando, no es limpio, porque las filas no corresponden con observaciones y las columnas no corresponden con variables, que son precisamente 2 de las 3 condiciones para que un conjunto de datos se considere limpio. 
+
+2) Obtención de tabla de datos limpios con la misma información
+
+Primero, hay que convertir los valores de semana en una columna, lo que hará la tabla más larga y estrecha. Todo esto haciendo uso de la funcion 'pivot_longer()'
+
+Luego, separamos la variable gender_age en las variables gender y age correspondientes, haciendo uso de la funcion separate()
+
+Separamos la columna week para quedarnos con el valor numérico que identifica a cada una de las semanas, y borramos la columna en la que se queda el valor repetido 'week'
+
+Para terminar y dejar el DataFrame limpio, pasamos la columna week de tipo 'character' a numérica. Aunque luego, en función del estudio que se pretenda realizar sobre el conjunto de datos en cuestión, se podrá cambiar el tipo de variable, según interese. 
+
+```{r}
+ResultsTidy = testResults %>%
+pivot_longer(week1:week5, names_to = "week") %>%
+  separate(gender_age,c("gender","age"),sep="_") %>%
+  separate(week,c('w','week'),sep=4)%>%
+  mutate(w=NULL) 
+ResultsTidy$week=as.numeric(ResultsTidy$week)
+ResultsTidy
+
+```
+
+
+# Ejercicio 3. Lectura de R4DS.
+
+Contnuando con nuestra *lectura conjunta* de este libro, si revisas el índice verás que hemos cubierto (holgadamente en algún caso) el contenido de los Capítulos 6, 8, 9, 10 y 11. Todos esos Capítulos son relativamente ligeros.  Por eso esta semana conviene detenerse un poco en la lectura de los Capítulos 7 y 12, que son los más densos en información. Y como motivación os proponemos un par de ejercicios, uno por cada uno de esos capítulos. 
+
++ Haz el [ejercicio 2 de la Sección 7.5.1.1 de R4DS](https://r4ds.had.co.nz/exploratory-data-analysis.html#exercises-17). Las ideas de esa sección son importantes para nuestro trabajo de las próximas sesiones.
+
+
+Analizamos la estructura del DataFrame y las variables que forman parte del mismo
+```{r}
+head(diamonds)
+```
+
+```{r}
+names(diamonds)
+```
+
+What variable in the diamonds dataset is most important for predicting the price of a diamond? How is that variable correlated with cut? Why does the combination of those two relationships lead to lower quality diamonds being more expensive?
+
+Para tener una primera información acerca del dataset y lo que representan las variables que contiene, accedemos a la ayuda de 'diamonds'
+
+1) Cuál es la variable del dataset más importante para la predicción de la variable precio de un diamante?
+
+Tenemos que estudiar todas las variables y su relación e influencia sobre el precio de un diamante. 
+Tras una primera visualización de todas las variables, nos damos cuenta de que los valores de x,y,z ya están incluidos o se tienen en cuenta en aquellas variables que estudian las dimensiones del diamante o que se ven influidas por estas, como podría ser 'depth'.
+
+Por lo tanto las variables a estudiar son :carat(quilates),cut(corte),color,clarity,depth y table
+
+En términos generales, se va a llevar a cabo un estudio bidireccional en el que iremos comparando la relación de todas las variables mencionadas con la variable de estudio (price)
+
+En función de la tipología de variable con la que estemos comparando la variable precio, realizaremos diagramas de dispersión o Boxplots. Concretamente, para las variables continuas emplearemos el diagrama de dispersión y para las categóricas el boxplot. 
+
+Primero realizaremos los diagramas de dispersión para las variables continuas, y posteriormente pasaremos a las categóricas con los boxplots, para realizar el estudio de forma ordenada. 
+
+
+
+
+
+VARIABLES CONTINUAS (Diagrama de dispersión):
+
+```{r}
+ggplot(diamonds, aes(x = carat, y = price)) +
+  geom_point()
+```
+Aquí, a pesar de que la variabilidad del precio con respecto a los quilates es notable, se aprecia cierta tendencia. Concretamente, se ve que a medida que aumenta el peso, el precio también aumenta, por lo que se aprecia cierta relación entre ambas, lo que posiciona a la variable carat como candidata importante a considerar por la importancia que puede llegar a tener en la predicción del precio de un diamante. 
+
+```{r}
+ggplot(diamonds, aes(x = depth, y = price)) +
+  geom_point()
+```
+En cuanto a la variable depth, se puede ver en el gráfico como hay una concentración de puntos entre 50 y 70 mm de profundidad, en el que la variabilidad de precios es muy alta, por lo que no se ve una relación clara entre ambas variables. 
+
+
+
+La variable table la tratamos como variable continua por el rango de valores que oscila. 
+```{r}
+ggplot(diamonds, aes(x = table, y = price)) +
+  geom_point()
+```
+En este último gráfico de dispersión, no se ve ninguna tendencia ni indicio que sugiera que existe una relación entre la variable table y price. El caso, en cierta forma, es similar al de depth, con una variabilidad de precios muy alta para cada valor de table. 
+
+
+VARIABLES CATEGÓRICAS (Boxplot):
+
+
+```{r}
+ggplot(diamonds, aes(x = cut, y = price)) +
+  geom_boxplot(aes(fill=cut))
+```
+En este caso, tenemos la variable categórica 'cut', que ya se encuentra ordenada en función de la calidad del corte.
+
+Al estudiar el gráfico, nos damos cuenta de que el rango de precios no varía demasiado en función del corte, ya que que la variabilidad entre los niveles de la variable cut es reducida. Debido a esto, a priori, la variable cut no será considerada como un factor influyente en la predicción del precio del diamante.
+
+Sí que es verdad, que conviene destacar que el corte ideal, que pensabamos que sería el más caro, tiene la mediana por debajo del resto, y habrá que descubrir el porqué. 
+
+```{r}
+diamonds %>%
+  mutate(color = fct_rev(color)) %>%
+  ggplot(aes(x = color, y = price)) +
+  geom_boxplot(aes(fill=color))
+```
+En cuanto a este caso, primero decir que se utiliza la función fct_rev() para ordenar los niveles de la variable color de forma ascendente a lo largo del eje X, y de esta forma poder analizar si es un factor influyente o no en el establecimiento del precio del diamante. 
+
+Se ve que cuanto peor es el color, la variabilidad aumenta y el rango de precios q se oscila parece mayor, lo que es algo confuso a priori. Por este motivo, se puede concluir que existe una relación negativa débil entre estas variables, aunque nada demasiado relevante para el análsis. 
+
+
+```{r}
+ggplot(data = diamonds) +
+  geom_boxplot(mapping = aes(x = clarity, y = price,fill=clarity))
+```
+En esta última variable que se va a estudiar, los niveles de claridad también se encuentran ordenados de peor(I1) a mejor(IF), por lo que directamente procedemos a la realización de la gráfica. 
+
+En este caso, también se aprecia una débil relación negativa entre ambas variables, pero tampoco es tan influyente como para que la claridad sea considerada como la mejor variable predictora para el precio. Por lo tanto, la relación no parece que sea significativa. 
+
+Las 2 últimas variables, en definitiva, tienen una gran variabilidad dentro de cada boxplot (nivel) y poca entre ellas. 
+
+CONCLUSION
+
+Teniendo en cuenta las consideraciones realizadas en cada uno de las representaciones gráficas, carat parece que es la mejor variable predictora de cara a conocer el precio de un diamante.
+ 
+2) Como se relaciona la variable cut con el carat ?
+
+
+Analizamos la correlación entre ambas variables a través de un boxplot, como hemos hecho hasta ahora en el caso de una variable continua con una categórica. 
+```{r}
+ggplot(diamonds, aes(x = cut, y = carat)) +
+  geom_boxplot(aes(fill=cut))
+```
+
+En este gráfico, se puede apreciar gran variabilidad en cuanto a los quilates en cada una de las categorías de corte, y en términos generales, una relación negativa leve entre ambas (variables), de forma que aquellos de más quilates, tienden a tener un corte de menor calidad (Fair).
+
+
+3)¿Por qué la combinación de estas dos relaciones hace que los diamantes de menor calidad sean más caros?
+
+Lo que se puede concluir en este aspecto, con todo el conjunto de gráficos y representaciones elaboradas, es que cuanto menor es la calidad del corte, por lo general, la variable carat alcanza valores más elevados, influyendo de forma directa sobre el precio establecido para cada diamante, y provocando que aquellos de menor calidad acaben siendo más caros. Al final, en la primera pregunta, hemos respondido haciendo referencia al hecho de que los quilates son la mejor variable predictora de cara a conocer el precio del diamante. 
+
++ Haz el [ejercicio 4 de la Sección 12.6.1 de R4DS](https://r4ds.had.co.nz/tidy-data.html#exercises-27). ¡Aprovecha el código previo de esa sección para trabajar con datos limpios!
+
+
+Empezamos copiando el código previo al ejercicio para poder trabajar con datos limpios:
+
+```{r}
+(who_Ejer=who %>%
+  pivot_longer(
+    cols = new_sp_m014:newrel_f65, 
+    names_to = "key", 
+    values_to = "cases", 
+    values_drop_na = TRUE
+  ) %>% 
+  mutate(
+    key = stringr::str_replace(key, "newrel", "new_rel")
+  ) %>%
+  separate(key, c("new", "var", "sexage")) %>% 
+  select(-new, -iso2, -iso3) %>% 
+  separate(sexage, c("sex", "age"), sep = 1))
+```
+Calculamos el numero total de casos, agrupados por sexo, país y año, obteniendo como resultado el siguiente DataFrame:
+```{r}
+(who_TABLE=who_Ejer %>%
+  group_by(country, year, sex) %>%
+  summarise(cases = sum(cases)))
+```
+
+Para la visualización de la información que nos aporta la tabla realizada, haremos uso de un gráfico temporal como el que se verá a continuación.
+
+Las columnas sex y country se juntan para que cada línea del gráfico represente la evolución temporal de los casos de TB en cada país para cada género. 
+
+```{r}
+who_TABLE  %>%
+  unite(pais_genero, country, sex, remove = FALSE) %>%
+  ggplot(aes(x = year, y = cases, group = pais_genero, colour = sex)) +
+  geom_line()
+```
+Claramente, se puede ver como, aproximadamente hasta el año 1995, hay países que no disponen de registros en el dataset o que el número de casos es muy reducido y constante, por lo que no interesa incluirlos en el estudio. Nos centraremos en las evoluciones que han sufrido a partir del 95.
+
+
+```{r}
+(who_TABLE1=who_Ejer %>%
+  group_by(country, year, sex) %>%
+  filter(year > 1995) %>%
+  summarise(cases = sum(cases)))
+```
+
+Trabajaremos con este nuevo DataFrame
+
+Volvemos a realizar el gráfico temporal, pero centrándonos en el número de casos a partir del año 1995, como se ha comentado previamente. 
+
+```{r}
+who_TABLE1  %>%
+  unite(pais_genero, country, sex, remove = FALSE) %>%
+  ggplot(aes(x = year, y = cases, group = pais_genero, colour = sex)) +
+  geom_line()
+```
+En este gráfico, vemos la evolución de cada sexo en cada país en lo referente a los casos de TB, aunque no se aprecia una distinción clara entre los países que están siendo representados.
+
+Por lo tanto, a continuación se procede con la selección de aquellos que en total superan los 500K casos. 
+
+```{r}
+(paisesTopCases = who_Ejer %>%
+  group_by(country) %>%
+  summarise(n=sum(cases)) %>%
+  filter(n>500000)  %>%
+  select(country))
+```
+Finalmente, se representan los gráficos temporales para cada país (de los seleccionados previamente) en función del sexo, y cada uno con su escala correspondiente, para poder estudiar con claridad y alto nivel de detalle la evolución y tendencia de forma independiente. 
+
+```{r}
+who_TABLE1  %>%
+  filter(country %in% paisesTopCases$country) %>%
+  unite(pais_genero, country, sex, remove = FALSE) %>%
+  ggplot(aes(x = year, y = cases, group = pais_genero, colour = sex)) +
+  geom_line() +
+  facet_wrap(~ country,scales='free_y')
+```
